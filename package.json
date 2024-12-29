@@ -1,0 +1,37 @@
+{
+  "name": "nightwatch-plugin-mailhog",
+  "version": "1.0.7",
+  "description": "A TypeScript based @nightwatchjs plugin for interacting with, and asserting on, data within a @mailhog instance.",
+  "keywords": [
+    "mailhog",
+    "nightwatch",
+    "nightwatchjs"
+  ],
+  "homepage": "https://github.com/nadeemc/nightwatch-plugin-mailhog#readme",
+  "bugs": {
+    "url": "https://github.com/nadeemc/nightwatch-plugin-mailhog/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nadeemc/nightwatch-plugin-mailhog.git"
+  },
+  "license": "MIT",
+  "author": "Nadeem Reinhardt",
+  "type": "commonjs",
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "nightwatch"
+  ],
+  "scripts": {
+    "prebuild": "rm -rf nightwatch && rm -f index.js && rm -f index.d.ts",
+    "build": "tsc || exit 0",
+    "postbuild": "cp src/nightwatch/types/index.d.ts ./index.d.ts && cp -r src/nightwatch/types nightwatch/"
+  },
+  "main": "index.js",
+  "devDependencies": {
+    "@nightwatch/apitesting": "^3",
+    "nightwatch": "^3",
+    "typescript": "^5.7.2"
+  }
+}
