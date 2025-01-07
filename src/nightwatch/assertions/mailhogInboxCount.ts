@@ -1,4 +1,5 @@
 import {type NightwatchAssertion} from 'nightwatch';
+import '@nightwatch/apitesting';
 
 export const assertion = function mailhogInboxCount(
 	this: NightwatchAssertion<number>,

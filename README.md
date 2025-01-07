@@ -14,9 +14,12 @@ plugins: ['@nightwatch/apitesting', 'nightwatch-plugin-mailhog']
 globals_path: 'nightwatch/globals.ts'
 ```
 
-Define the `mailhog` API endpoint in your global variables file:
+Define your `mailhog` API endpoint within your global variables file:
+
 ```ts
-const globals = {
+import {NightwatchGlobals} from 'nightwatch';
+
+const globals: NightwatchGlobals = {
 	mailhog: 'http://localhost:4566/mailhog/api',
 };
 export default globals;
@@ -26,38 +29,44 @@ export default globals;
 
 ```ts
 import {type NightwatchTests} from 'nightwatch';
-// Import type definitions
-import _ from 'nightwatch-plugin-mailhog';
+// Import type definition to enable intellisense for mailhog commands.
+import 'nightwatch-plugin-mailhog';
 
 const email: NightwatchTests = {
 	async 'can retrieve messages'() {
-		// Check for a 200 response from the Mailhog API, ignoring found messages
-		await browser.assert.mailhogInboxCount('.com', 0, 'atLeast');
+		// Because this is using 0 for the check, it only confirms that the
+		// MailHog API returns a 200 status code from the request.
+		await browser.assert.mailhogInboxCount(0, 'greaterThanOrEqual');
 	},
 
 	async 'find by keyword and id'() {
-		const emails = await browser.mailhogFindEmails('Subject, body, or recipient');
-		if (!emails || emails.length === 0) {
-			await browser.assert.fail('No emails found');
-		}
-
-		const email = emails[0];
+		let email: MailHogItem | undefined = undefined;
+		
+		await browser.mailhog().findEmails('Subject, body, or recipient', items => {
+			if (items.length > 0) {
+				email = items[0];
+			}
+		});
+		
+		await browser.assert.ok(email !== undefined);
 		await browser.assert.ok(email.Content.Body.includes('Some keywords'));
 		await browser.assert.ok(email.Content.Headers.Subject[0].includes('Some keywords'));
 
-		const found = await browser.mailhogGetEmail(email.ID);
-		await browser.assert.strictEqual(found.ID, email.ID);
+		await browser.mailhog().getEmail(email.ID, found => {
+			browser.assert.strictEqual(found.ID, email.ID);
+		});
 	},
-	
-	async 'retrieve one-time-password and delete'() {
-		const otpCode = await browser.mailhogGetOneTimeCode('Your OTP subject');
-		await browser.assert.ok(otp.length > 0);
 
-		await browser.mailhogDeleteEmail(email.ID);
+	async 'retrieve one-time-password and delete'() {
+		let otpCode: string | undefined = undefined;
+		await browser.mailhog().getOneTimeCode('Your OTP subject', code => {
+			otpCode = code;
+		});
+		await browser.assert.ok(otpCode);
 	},
-	
+
 	async 'delete all messages'() {
-		await browser.mailhogDeleteAllEmails();
+		await browser.mailhog().deleteAllEmails();
 	},
 };
 

@@ -1,8 +1,7 @@
-import {Assert, NightwatchAPI, NightwatchAssertion} from 'nightwatch';
-
 export * from 'nightwatch';
 
 export type MailHogItem = {
+	ID: string;
 	Content: {
 		Body: string;
 		Headers: {
@@ -14,30 +13,58 @@ export type MailHogItem = {
 		Mailbox: string;
 		Domain: string;
 	};
-	ID: string;
 	To: {
 		Mailbox: string;
 		Domain: string;
 	};
 };
 
+export type MailHogFindOptions = {
+	query: string;
+	limit?: number;
+	start?: number;
+	kind?: 'from' | 'to' | 'containing';
+};
+
 declare module 'nightwatch' {
-	export interface NightwatchCustomCommands {
-		// Deletes all messages in the MailHog inbox.
-		mailhogDeleteAllEmails: () => Promise<void>;
-		// Deletes a specific message in the MailHog inbox.
-		mailhogDeleteEmail: (id: string) => Promise<void>;
-		// Finds messages in the MailHog inbox.
-		mailhogFindEmails: (query: string, limit?: number, start?: number, kind?: 'from' | 'to' | 'containing') => Promise<MailHogItem[]>;
-		// Retrieve a specific message in the MailHog inbox.
-		mailhogGetEmail: (id: string) => Promise<MailHogItem>;
-		// Retrieve a one-time password from the MailHog inbox.
-		// Expects the email to contain a <code data-otp="one-time-code"> element with the code.
-		mailhogGetOneTimeCode: (query: string, kind?: 'from' | 'to' | 'containing') => Promise<string>;
+	interface NightwatchAssertions {
+		/**
+		 * Asserts on the number of matching messages in the MailHog inbox.
+		 * @param expected the expected number of messages
+		 * @param comparison 'lessThanOrEqual' | 'greaterThanOrEqual' | 'equal' (default)
+		 * @param query e.g. an email address or substring
+		 * @param kind 'from' | 'to' | 'containing' (default)
+		 */
+		mailhogInboxCount: (expected: number, comparison?: 'lessThanOrEqual' | 'greaterThanOrEqual' | 'equal', query?: string, kind?: 'from' | 'to' | 'containing') => NightwatchAssertion<number>;
 	}
 
-	export interface NightwatchAssertions {
-		// Asserts on the total number of messages in the MailHog inbox matching a query.
-		mailhogInboxCount: (this: Assert<NightwatchAPI> | NightwatchAssertion<number>, containing?: string, limit?: number, comparison?: 'atLeast' | 'atMost' | 'equal') => Promise<void>;
+	interface NightwatchCustomCommands {
+		/**
+		 * Access all Mailhog commands under browser.mailhog
+		 */
+		mailhog: () => {
+			/**
+			 * Deletes all emails in the MailHog inbox.
+			 */
+			deleteAllEmails: () => Awaitable<NightwatchAPI, Error | null>;
+			/**
+			 * Deletes a specific email in the MailHog inbox.
+			 */
+			deleteEmail: (id: string) => Awaitable<NightwatchAPI, Error | null>;
+			/**
+			 * Finds messages in the MailHog inbox.
+			 */
+			findEmails: (queryOrOptions: string | MailHogFindOptions, callback: (items: MailHogItem[]) => void) => Awaitable<NightwatchAPI, Error | null>;
+			/**
+			 * Retrieves a specific email in the MailHog inbox by its ID.
+			 */
+			getEmail: (id: string, callback: (item: MailHogItem) => void) => Awaitable<NightwatchAPI, Error | null>;
+			/**
+			 * Retrieves a one-time code from the MailHog inbox by searching
+			 * for an email, parses it, and then deletes that email.
+			 * Expects an element like: <code data-otp="one-time-code">123456</code> in the body.
+			 */
+			getOneTimeCode: (queryOrOptions: string | MailHogFindOptions, callback: (code: string) => void) => Awaitable<NightwatchAPI, Error | null>;
+		};
 	}
-}
+};

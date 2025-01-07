@@ -1,6 +1,6 @@
 {
   "name": "nightwatch-plugin-mailhog",
-  "version": "1.0.7",
+  "version": "2.0.1",
   "description": "A TypeScript based @nightwatchjs plugin for interacting with, and asserting on, data within a @mailhog instance.",
   "keywords": [
     "mailhog",
@@ -19,19 +19,20 @@
   "author": "Nadeem Reinhardt",
   "type": "commonjs",
   "files": [
-    "index.js",
-    "index.d.ts",
-    "nightwatch"
+    "dist/index.js",
+    "dist/index.d.ts",
+    "dist/nightwatch"
   ],
   "scripts": {
-    "prebuild": "rm -rf nightwatch && rm -f index.js && rm -f index.d.ts",
+    "prebuild": "rm -rf dist",
     "build": "tsc || exit 0",
-    "postbuild": "cp src/nightwatch/types/index.d.ts ./index.d.ts && cp -r src/nightwatch/types nightwatch/"
+    "postbuild": "cp src/nightwatch/types/index.d.ts dist/index.d.ts"
   },
-  "main": "index.js",
+  "main": "dist/index.js",
   "devDependencies": {
-    "@nightwatch/apitesting": "^3",
-    "nightwatch": "^3",
-    "typescript": "^5.7.2"
+    "@nightwatch/apitesting": "latest",
+    "@types/nightwatch": "latest",
+    "nightwatch": "latest",
+    "typescript": "latest"
   }
 }
