@@ -8,7 +8,7 @@ export type MailHogItem = {
 			Subject: string[];
 		};
 	};
-	Created: Date;
+	Created: string;
 	From: {
 		Mailbox: string;
 		Domain: string;

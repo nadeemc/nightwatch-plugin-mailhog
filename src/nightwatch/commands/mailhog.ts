@@ -138,9 +138,12 @@ export default class MailhogCommand implements NightwatchCustomCommandsModel {
 					}
 
 					let mostRecentEmail = emails[0];
+					let mostRecentCreated = Date.parse(mostRecentEmail.Created);
 					for (const email of emails) {
-						if (email.Created > mostRecentEmail.Created) {
+						let created = Date.parse(email.Created);
+						if (created > mostRecentCreated) {
 							mostRecentEmail = email;
+							mostRecentCreated = created;
 						}
 					}
 
