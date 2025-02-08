@@ -5,6 +5,7 @@ export type MailHogItem = {
 	Content: {
 		Body: string;
 		Headers: {
+			Date: string[] | undefined;
 			Subject: string[];
 		};
 	};

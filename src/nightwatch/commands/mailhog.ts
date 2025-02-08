@@ -127,7 +127,7 @@ export default class MailhogCommand implements NightwatchCustomCommandsModel {
 							});
 
 					let emails: MailHogItem[] = [];
-					await methods.findEmails(options, async (found) => {
+					await methods.findEmails(options, (found) => {
 						emails = found;
 					});
 
@@ -138,10 +138,22 @@ export default class MailhogCommand implements NightwatchCustomCommandsModel {
 					}
 
 					let mostRecentEmail = emails[0];
-					let mostRecentCreated = Date.parse(mostRecentEmail.Created);
+					// Headers have been found to be more reliable than Created
+					// because they are when the OTP email was sent, not when
+					// it was received by MailHog.
+					let mostRecentCreated = new Date(
+						Boolean(mostRecentEmail.Content.Headers.Date?.length) ?
+						mostRecentEmail.Content.Headers.Date[0] :
+						mostRecentEmail.Created
+					);
+
 					for (const email of emails) {
-						let created = Date.parse(email.Created);
-						if (created > mostRecentCreated) {
+						let created = new Date(
+							Boolean(email.Content.Headers.Date?.length) ?
+							email.Content.Headers.Date[0] :
+							email.Created
+						);
+						if (created.getTime() > mostRecentCreated.getTime()) {
 							mostRecentEmail = email;
 							mostRecentCreated = created;
 						}
