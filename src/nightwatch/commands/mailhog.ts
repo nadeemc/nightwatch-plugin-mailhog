@@ -10,6 +10,8 @@ import '@nightwatch/apitesting';
  *    browser.mailhog().<functionName>()
  */
 export default class MailhogCommand implements NightwatchCustomCommandsModel {
+	public static autoInvoke = true;
+
 	public command(this: CustomCommandInstance) {
 		const { api } = this;
 		const mailhogUrl = api.globals.mailhog;
