@@ -10,8 +10,6 @@ import '@nightwatch/apitesting';
  *    browser.mailhog().<functionName>()
  */
 export default class MailhogCommand implements NightwatchCustomCommandsModel {
-	public static autoInvoke = true;
-
 	public command(this: CustomCommandInstance) {
 		const { api } = this;
 		const mailhogUrl = api.globals.mailhog;
@@ -43,7 +41,7 @@ export default class MailhogCommand implements NightwatchCustomCommandsModel {
 				return api.perform(() => {
 					api.supertest
 						.request(mailhogUrl)
-						.delete(`/v1/messages/${id}`)
+						.delete(`/v1/messages/${encodeURIComponent(id)}`)
 						.expect(200);
 				});
 			},
@@ -60,7 +58,12 @@ export default class MailhogCommand implements NightwatchCustomCommandsModel {
 						typeof queryOrOptions === 'string'
 							? { query: queryOrOptions }
 							: queryOrOptions;
-					const { query, limit = 1, start = 0, kind = 'containing' } = options;
+					const {
+						kind = 'containing',
+						limit = 10,
+						query,
+						start = 0,
+					} = options;
 
 					const response = await api.supertest
 						.request(mailhogUrl)
@@ -79,7 +82,7 @@ export default class MailhogCommand implements NightwatchCustomCommandsModel {
 				return api.perform(async () => {
 					const response = await api.supertest
 						.request(mailhogUrl)
-						.get(`/v1/messages/${id}`)
+						.get(`/v1/messages/${encodeURIComponent(id)}`)
 						.set('Accept', 'text/json')
 						.expect(200);
 
@@ -93,6 +96,8 @@ export default class MailhogCommand implements NightwatchCustomCommandsModel {
 			 * Retrieves a one-time code from the MailHog inbox by searching
 			 * for an email, parses it, and then deletes that email.
 			 * Expects an element like: <code data-otp="one-time-code">123456</code> in the body.
+			 * @param queryOrOptions The query string or options to find the email.
+			 *  If a string, it is treated as a 'to' email address query by default.
 			 */
 			getOneTimeCode: (
 				queryOrOptions: string | MailHogFindOptions,
@@ -100,8 +105,27 @@ export default class MailhogCommand implements NightwatchCustomCommandsModel {
 			) => {
 				return api.perform(async () => {
 					// 1) Find the latest matching email
+					const defaultOtpOptions: Omit<MailHogFindOptions, 'query'> = {
+						kind: 'to',
+						// There is no sort option, so we retrieve a
+						// batch and then sort it ourselves within
+						// the response logic. This ensures if multiple
+						// emails were sent, we get the latest one.
+						limit: 20,
+						start: 0,
+					};
+					const options: MailHogFindOptions =
+						typeof queryOrOptions === 'string' ?
+							({
+								...defaultOtpOptions,
+								query: queryOrOptions
+							}) : ({
+								...defaultOtpOptions,
+								...queryOrOptions,
+							});
+
 					let emails: MailHogItem[] = [];
-					await methods.findEmails(queryOrOptions, async (found) => {
+					await methods.findEmails(options, async (found) => {
 						emails = found;
 					});
 
@@ -111,9 +135,15 @@ export default class MailhogCommand implements NightwatchCustomCommandsModel {
 						return;
 					}
 
-					const email = emails[0];
-					const emailId = email.ID;
-					const body = email.Content.Body || '';
+					let mostRecentEmail = emails[0];
+					for (const email of emails) {
+						if (email.Created > mostRecentEmail.Created) {
+							mostRecentEmail = email;
+						}
+					}
+
+					const emailId = mostRecentEmail.ID;
+					const body = mostRecentEmail.Content.Body || '';
 
 					// 2) Extract the one-time code
 					//    Example snippet: <code data-otp="one-time-code">123456</code>
@@ -127,10 +157,7 @@ export default class MailhogCommand implements NightwatchCustomCommandsModel {
 					const code = matches[1];
 
 					// 3) Delete the email so it can't be reused
-					await api.supertest
-						.request(mailhogUrl)
-						.delete(`/v1/messages/${emailId}`)
-						.expect(200);
+					await methods.deleteEmail(emailId);
 
 					callback(code);
 				});

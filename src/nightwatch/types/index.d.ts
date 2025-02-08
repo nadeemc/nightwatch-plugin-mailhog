@@ -20,10 +20,10 @@ export type MailHogItem = {
 };
 
 export type MailHogFindOptions = {
-	query: string;
-	limit?: number;
-	start?: number;
 	kind?: 'from' | 'to' | 'containing';
+	limit?: number;
+	query: string;
+	start?: number;
 };
 
 declare module 'nightwatch' {
