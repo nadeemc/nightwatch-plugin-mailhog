@@ -1,7 +1,9 @@
+/* eslint-disable unicorn/filename-case */
 import {type NightwatchAssertion} from 'nightwatch';
+// eslint-disable-next-line import/no-unassigned-import
 import '@nightwatch/apitesting';
 
-export const assertion = function mailhogInboxCount(
+export const assertion = function (
 	this: NightwatchAssertion<number>,
 	containing: string | undefined = undefined,
 	count = 1,
@@ -51,3 +53,5 @@ export const assertion = function mailhogInboxCount(
 		callback({value: matches});
 	};
 };
+
+/* eslint-enable unicorn/filename-case */
