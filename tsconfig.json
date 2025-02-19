@@ -1,8 +1,9 @@
 {
 	"compilerOptions": {
-		"declaration": false,
-		"outDir": "./dist",
 		"allowJs": true,
+		"declaration": false,
+		"lib": ["es2021"],
+		"outDir": "./dist",
 		"skipLibCheck": true
 	},
 	"include": ["src/**/*.ts", "src/**/*.js"],

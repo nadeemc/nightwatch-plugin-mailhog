@@ -1,6 +1,6 @@
 {
   "name": "nightwatch-plugin-mailhog",
-  "version": "2.2.0",
+  "version": "2.2.1",
   "description": "A TypeScript based @nightwatchjs plugin for interacting with, and asserting on, data within a @mailhog instance.",
   "keywords": [
     "mailhog",

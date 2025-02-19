@@ -10,9 +10,19 @@ export type MailHogItem = {
 	Content: {
 		Body: string;
 		Headers: {
-			Date: string[] | undefined;
+			'Content-Transfer-Encoding'?: string[];
+			'Content-Type'?: string[];
+			Date?: string[];
+			From?: string[];
+			'Message-ID'?: string[];
+			'Mime-Version'?: string[];
+			Received?: string[];
+			'Reply-To'?: string[];
+			'Return-Path'?: string[];
 			Subject: string[];
+			To?: string[];
 		};
+		Size: number;
 	};
 	Created: string;
 	From: {
@@ -91,6 +101,14 @@ export default class MailHogCommand implements NightwatchCustomCommandsModel {
 						.set('Accept', 'application/json')
 						.expect(200);
 
+					// Decode quoted-printable encoding if present
+					for (const item of response.body.items) {
+						const transferEncoding = item.Content.Headers['Content-Transfer-Encoding'];
+						if (item.Content.Body && transferEncoding?.includes('quoted-printable')) {
+							item.Content.Body = methods.decodeQuotedPrintable(item.Content.Body);
+						}
+					}
+
 					await callback(response.body.items || []);
 				});
 			},
@@ -114,7 +132,14 @@ export default class MailHogCommand implements NightwatchCustomCommandsModel {
 
 					// The MailHog v1/messages/<id> endpoint returns raw JSON text
 					// so parse it and return the object
-					await callback(JSON.parse(response.text) as MailHogItem);
+					const item = JSON.parse(response.text) as MailHogItem;
+					// Decode quoted-printable encoding if present
+					const transferEncoding = item.Content.Headers['Content-Transfer-Encoding'];
+					if (item.Content.Body && transferEncoding?.includes('quoted-printable')) {
+						item.Content.Body = methods.decodeQuotedPrintable(item.Content.Body);
+					}
+
+					await callback(item);
 				});
 			},
 
@@ -223,6 +248,29 @@ export default class MailHogCommand implements NightwatchCustomCommandsModel {
 					result = code;
 				});
 				return result;
+			},
+
+			decodeQuotedPrintable(content: string) {
+				// Based on https://www.npmjs.com/package/quoted-printable but
+				// without adding it as a full dependency.
+				return content
+					// https://tools.ietf.org/html/rfc2045#section-6.7, rule 3:
+					// “Therefore, when decoding a `Quoted-Printable` body, any trailing white
+					// space on a line must be deleted, as it will necessarily have been added
+					// by intermediate transport agents.”
+					.replaceAll(/[\t ]$/gm, '')
+					// Remove hard line breaks preceded by `=`. Proper `Quoted-Printable`-
+					// encoded data only contains CRLF line  endings, but for compatibility
+					// reasons we support separate CR and LF too.
+					.replaceAll(/=(?:\r\n?|\n|$)/g, '')
+					// Decode escape sequences of the form `=XX` where `XX` is any
+					// combination of two hexidecimal digits. For optimal compatibility,
+					// lowercase hexadecimal digits are supported as well. See
+					// https://tools.ietf.org/html/rfc2045#section-6.7, note 1.
+					.replaceAll(/=([a-fA-F\d]{2})/g, ($0, $1) => {
+						const codePoint = Number.parseInt($1, 16);
+						return String.fromCodePoint(codePoint);
+					});
 			},
 
 			toSortedByDate(items: MailHogItem[]) {
